@@ -18,12 +18,46 @@ Displayer::Displayer(ros::NodeHandle & nh, ros::NodeHandle nh_private) : nh_(nh)
       display_method_ = RED_BLUE;
   }
 
+  used_last_image_ = false;
+
   // Set up subscribers and publishers
   event_sub_ = nh_.subscribe("events", 1, &Displayer::eventsCallback, this);
 
   image_transport::ImageTransport it_(nh_);
   image_pub_ = it_.advertise("event_image", 1);
+  image_sub_ = it_.subscribe("image", 1, &Displayer::imageCallback, this);
 }
+
+void Displayer::imageCallback(const sensor_msgs::Image::ConstPtr& msg)
+ {
+   cv_bridge::CvImagePtr cv_ptr;
+
+   try
+   {
+     cv_ptr = cv_bridge::toCvCopy(msg);
+   }
+   catch (cv_bridge::Exception& e)
+   {
+     ROS_ERROR("cv_bridge exception: %s", e.what());
+     return;
+   }
+
+   // Convert to BGR image
+   if (msg->encoding == "mono8")
+   {
+     cv::cvtColor(cv_ptr->image, last_image_, CV_GRAY2BGR);
+   }
+
+   if (!used_last_image_)
+   {
+     cv_bridge::CvImage cv_image;
+     last_image_.copyTo(cv_image.image);
+     cv_image.encoding = "bgr8";
+     image_pub_.publish(cv_image.toImageMsg());
+   }
+   used_last_image_ = false;
+ }
+
 
 
 Displayer::~Displayer()
