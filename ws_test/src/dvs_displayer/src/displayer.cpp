@@ -121,7 +121,18 @@ void Displayer::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   {
     // Create image
     cv_image.encoding = "mono8";
-    cv_image.image = cv::Mat(msg->height, msg->width, CV_8U, cv::Scalar(128));
+    // cv_image.image = cv::Mat(msg->height, msg->width, CV_8U, cv::Scalar(128));
+    if (last_image_.rows == msg->height && last_image_.cols == msg->width)
+     {
+       // If DAVIS image is available, use it as canvas
+       cv::cvtColor(last_image_, cv_image.image, CV_BGR2GRAY);
+       used_last_image_ = true;
+     }
+     else
+     {
+       // Create image
+       cv_image.image = cv::Mat(msg->height, msg->width, CV_8U, cv::Scalar(128));
+     }
 
     // Per-pixel event histograms
     cv::Mat on_events  = cv::Mat::zeros(msg->height, msg->width, CV_8U);
@@ -149,7 +160,19 @@ void Displayer::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   {
     // Create image
     cv_image.encoding = "bgr8";
-    cv_image.image = cv::Mat(msg->height, msg->width, CV_8UC3, cv::Scalar(255,255,255));
+    // cv_image.image = cv::Mat(msg->height, msg->width, CV_8UC3, cv::Scalar(255,255,255));
+    if (last_image_.rows == msg->height && last_image_.cols == msg->width)
+     {
+       // If DAVIS image is available, use it as canvas
+       cv::cvtColor(last_image_, cv_image.image, CV_BGR2GRAY);
+       used_last_image_ = true;
+     }
+     else
+     {
+       // Create image
+       cv_image.image = cv::Mat(msg->height, msg->width, CV_8U, cv::Scalar(128));
+     }
+
 
     // Just red or blue over white background
     for(const dvs_msgs::Event& ev : msg->events)

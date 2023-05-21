@@ -35,6 +35,7 @@ private:
   //display enum
   enum DisplayMethod
   {
+    /// @brief 
     GRAYSCALE, RED_BLUE
   } display_method_;
 
