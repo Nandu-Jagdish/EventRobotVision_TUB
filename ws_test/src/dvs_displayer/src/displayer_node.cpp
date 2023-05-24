@@ -6,7 +6,6 @@ int main(int argc, char* argv[])
 
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
-  ROS_INFO("display running!");
 
   dvs_displayer::Displayer displayer(nh, nh_private);
 
