@@ -10,14 +10,13 @@ Integrator::Integrator(ros::NodeHandle & nh, ros::NodeHandle nh_private) : nh_(n
   nh_private.param<double>("cut_off", alpha_cutoff_, 5.);
 
   // Set up subscribers and publishers
-  // FILL IN...
-//  event_sub_ = ...
+  event_sub_ = nh_.subscribe("events", 1, &Integrator::eventsCallback, this);
   // Set the queue size to infinity to avoid dropping messages.
 
   image_transport::ImageTransport it_(nh_);
   // FILL IN...
-//  time_map_pub_ = ...
-//  image_pub_ = ...
+ time_map_pub_ = it_.advertise("time_map", 1); //Assuming timemap is image
+ image_pub_ = it_.advertise("image", 1);
 
   // Dynamic reconfigure
   dynamic_reconfigure_callback_ = boost::bind(&Integrator::reconfigureCallback, this, _1, _2);
@@ -35,6 +34,8 @@ Integrator::~Integrator()
 {
   // Close the publishers
   // FILL IN...
+  image_pub_.shutdown();
+  time_map_pub_.shutdown();
 }
 
 
@@ -44,6 +45,20 @@ Integrator::~Integrator()
 void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
 {
   // Need to update the state (time_map and brightness image) even if there are no subscribers on the output image
+  //check monotonic time and count events
+
+
+  // if (msg->events.size() > 0)
+  // {
+  //   const double t_first = msg->events[0].ts.toSec();
+  //   const double t_last = msg->events[msg->events.size() - 1].ts.toSec();
+  //   if (t_first > t_last)
+  //   {
+  //     ROS_WARN("Non-monotonic events, skipping frame");
+  //     return;
+  //   }
+  // }
+  //reset time stamp
 
   std::cout << "alpha_cutoff_ = " << alpha_cutoff_ << std::endl;
   if (!(state_time_map_.rows == msg->height && state_time_map_.cols == msg->width))
@@ -53,12 +68,49 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     // Initialize the time map with the time of the first event
     // and initialize the brightness image to zero.
     // FILL IN...
-//    state_time_map_ = cv::Mat ...
+   state_time_map_ = cv::Mat::zeros(msg->height, msg->width, CV_64FC1);
+    state_image_ = cv::Mat::zeros(msg->height, msg->width, CV_64FC1);
 //    state_image_    = cv::Mat ...
   }
 
   // Process events in the message msg, one by one (in a loop)
   // FILL IN...
+  for (int i = 0; i < msg->events.size(); i++)
+  {
+    // Get the event
+    const dvs_msgs::Event & e = msg->events[i];
+
+    // Get the event coordinates
+    const int x = e.x;
+    const int y = e.y;
+
+    // Get the event time
+    const double t = e.ts.toSec();
+
+    // Get the event polarity
+    const bool p = e.polarity;
+
+    // Get the time of the last event at (x,y)
+    const double t_last = state_time_map_.at<double>(y, x);
+
+    // Compute the time interval from the last event at (x,y)
+    const double dt = t - t_last;
+
+    // Update the time map
+    state_time_map_.at<double>(y, x) = t;
+
+    // Update the brightness image
+    // FILL IN...
+    if (p)
+    {
+      state_image_.at<double>(y, x) += c_pos_ + exp(-dt / alpha_cutoff_);
+    }
+    else
+    {
+      state_image_.at<double>(y, x) -= c_neg_ + exp(-dt / alpha_cutoff_);
+    }
+  }
+
 
 
   // Exit if there are no subscribers
@@ -66,6 +118,8 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   {
     publishState();
   }
+
+  // if 
 }
 
 
@@ -86,6 +140,9 @@ void Integrator::publishState()
   // Need to display all pixels at the same reference time (e.g., the time of
   // the last event). So do not forget to "decay" the brightness to the ref. time.
   // FILL IN...
+  cv_image_time.image = state_time_map_;
+  cv_image.image = state_image_;
+
 
 
   // Convert to appropriate range, [0,255]
@@ -94,7 +151,7 @@ void Integrator::publishState()
 
 
   // Publish the time map and the brightness image
-  time_map_pub_.publish(cv_image_time.toImageMsg());
+  // time_map_pub_.publish(cv_image_time.toImageMsg());
   image_pub_.publish(cv_image.toImageMsg());
 }
 

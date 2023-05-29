@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "ws_test/src",
+                "ws_test/src/**",
                 "/opt/ros/noetic/include",
                 "/usr/include/opencv4"
             ],
