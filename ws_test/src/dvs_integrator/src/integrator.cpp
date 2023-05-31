@@ -10,13 +10,14 @@ Integrator::Integrator(ros::NodeHandle & nh, ros::NodeHandle nh_private) : nh_(n
   nh_private.param<double>("cut_off", alpha_cutoff_, 5.);
 
   // Set up subscribers and publishers
-  event_sub_ = nh_.subscribe("events", 1, &Integrator::eventsCallback, this);
+  event_sub_ = nh_.subscribe("events", 0, &Integrator::eventsCallback, this);//infiinte queue size
   // Set the queue size to infinity to avoid dropping messages.
+
 
   image_transport::ImageTransport it_(nh_);
   // FILL IN...
  time_map_pub_ = it_.advertise("time_map", 1); //Assuming timemap is image
- image_pub_ = it_.advertise("image", 1);
+ image_pub_ = it_.advertise("image_out", 1);
 
   // Dynamic reconfigure
   dynamic_reconfigure_callback_ = boost::bind(&Integrator::reconfigureCallback, this, _1, _2);
@@ -58,7 +59,7 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   //     return;
   //   }
   // }
-  //reset time stamp
+  // reset time stamp
 
   std::cout << "alpha_cutoff_ = " << alpha_cutoff_ << std::endl;
   if (!(state_time_map_.rows == msg->height && state_time_map_.cols == msg->width))
@@ -66,9 +67,12 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     // Allocate memory for time map and for image out
     const double t_first_ = msg->events[0].ts.toSec();
     // Initialize the time map with the time of the first event
+    // state_time_map_ = cv::Mat::ones(msg->height, msg->width, CV_64FC1) * t_first_;
+    state_time_map_ = cv::Mat(msg->height, msg->width, CV_64FC1, cv::Scalar(t_first_));
+
+
     // and initialize the brightness image to zero.
-    // FILL IN...
-   state_time_map_ = cv::Mat::zeros(msg->height, msg->width, CV_64FC1);
+    // state_time_map_ = cv::Mat::zeros(msg->height, msg->width, CV_64FC1) ;
     state_image_ = cv::Mat::zeros(msg->height, msg->width, CV_64FC1);
 //    state_image_    = cv::Mat ...
   }
@@ -103,11 +107,11 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     // FILL IN...
     if (p)
     {
-      state_image_.at<double>(y, x) += c_pos_ + exp(-dt / alpha_cutoff_);
+      state_image_.at<double>(y, x) += c_pos_ + exp(-dt * alpha_cutoff_);
     }
     else
     {
-      state_image_.at<double>(y, x) -= c_neg_ + exp(-dt / alpha_cutoff_);
+      state_image_.at<double>(y, x) -= c_neg_ + exp(-dt * alpha_cutoff_);
     }
   }
 
@@ -140,19 +144,39 @@ void Integrator::publishState()
   // Need to display all pixels at the same reference time (e.g., the time of
   // the last event). So do not forget to "decay" the brightness to the ref. time.
   // FILL IN...
-  cv_image_time.image = state_time_map_;
-  cv_image.image = state_image_;
+  // cv_image_time.image = state_time_map_;
+  // cv_image.image = state_image_;
+
+  // cv::Mat image_out;
+  cv::Mat time_map_out;
+
+  // state_image_.copyTo(image_out);
+  state_time_map_.copyTo(time_map_out);
 
 
 
   // Convert to appropriate range, [0,255]
   // Feel free to use minMaxLocRobust
   // FILL IN...
+  // double min, max;
+  // minMaxLocRobust(cv_image.image, min, max, 2);
+  // cv_image.image = (cv_image.image - min) * 255.0 / (max - min);
+  // cv_image.image.convertTo(cv_image.image, CV_8UC1);
+  // cv_image_time.image = (cv_image_time.image - min) * 255.0 / (max - min);
+  // cv_image_time.image.convertTo(cv_image_time.image, CV_8UC1);
+
+  double min_time, max_time;
+  minMaxLocRobust(time_map_out, min_time, max_time, 2);
+  time_map_out = (time_map_out - min_time) * 255.0 / (max_time - min_time);
+  time_map_out.convertTo(cv_image_time.image, CV_8UC1);
+
+
+  
 
 
   // Publish the time map and the brightness image
-  // time_map_pub_.publish(cv_image_time.toImageMsg());
-  image_pub_.publish(cv_image.toImageMsg());
+  time_map_pub_.publish(cv_image_time.toImageMsg());
+  // image_pub_.publish(cv_image.toImageMsg());
 }
 
 
