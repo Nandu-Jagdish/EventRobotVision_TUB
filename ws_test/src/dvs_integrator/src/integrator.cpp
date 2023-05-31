@@ -48,15 +48,22 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   // Need to update the state (time_map and brightness image) even if there are no subscribers on the output image
   //check monotonic time and count events
 
+  //check if the new event is older than current event
+
+
 
   // if (msg->events.size() > 0)
   // {
-  //   const double t_first = msg->events[0].ts.toSec();
-  //   const double t_last = msg->events[msg->events.size() - 1].ts.toSec();
+  //    double t_first = msg->events[0].ts.toSec();
+  //   //  double t_last = msg->events[msg->events.size() - 1].ts.toSec();
+  //   // init t_last
+  //   double t_last = state_time_map_.at<double>(0, 0);
   //   if (t_first > t_last)
   //   {
   //     ROS_WARN("Non-monotonic events, skipping frame");
-  //     return;
+  //     // return;
+  //     // make the last event the first event
+  //     t_first = t_last;
   //   }
   // }
   // reset time stamp
@@ -79,6 +86,7 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
 
   // Process events in the message msg, one by one (in a loop)
   // FILL IN...
+  
   for (int i = 0; i < msg->events.size(); i++)
   {
     // Get the event
@@ -147,10 +155,10 @@ void Integrator::publishState()
   // cv_image_time.image = state_time_map_;
   // cv_image.image = state_image_;
 
-  // cv::Mat image_out;
+  cv::Mat image_out;
   cv::Mat time_map_out;
 
-  // state_image_.copyTo(image_out);
+  state_image_.copyTo(image_out);
   state_time_map_.copyTo(time_map_out);
 
 
@@ -158,10 +166,10 @@ void Integrator::publishState()
   // Convert to appropriate range, [0,255]
   // Feel free to use minMaxLocRobust
   // FILL IN...
-  // double min, max;
-  // minMaxLocRobust(cv_image.image, min, max, 2);
-  // cv_image.image = (cv_image.image - min) * 255.0 / (max - min);
-  // cv_image.image.convertTo(cv_image.image, CV_8UC1);
+  double min, max;
+  minMaxLocRobust(image_out, min, max, 2);
+  image_out = (image_out - min) * 255.0 / (max - min);
+  image_out.convertTo(cv_image.image, CV_8UC1);
   // cv_image_time.image = (cv_image_time.image - min) * 255.0 / (max - min);
   // cv_image_time.image.convertTo(cv_image_time.image, CV_8UC1);
 
@@ -176,7 +184,7 @@ void Integrator::publishState()
 
   // Publish the time map and the brightness image
   time_map_pub_.publish(cv_image_time.toImageMsg());
-  // image_pub_.publish(cv_image.toImageMsg());
+  image_pub_.publish(cv_image.toImageMsg());
 }
 
 
