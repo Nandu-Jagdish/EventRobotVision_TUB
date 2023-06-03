@@ -67,6 +67,8 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   //   }
   // }
   // reset time stamp
+  // init t_first to dummy value
+  double t_first_ = 0.0;
 
   std::cout << "alpha_cutoff_ = " << alpha_cutoff_ << std::endl;
   if (!(state_time_map_.rows == msg->height && state_time_map_.cols == msg->width))
@@ -107,6 +109,23 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
 
     // Compute the time interval from the last event at (x,y)
     const double dt = t - t_last;
+
+    // ros info on dt
+    // ROS_INFO("dt = %f\n current time =%f\n Previous Time =%f\n**", dt, t,t_last);
+    // if time not monotonic
+    if (dt < 0)
+    {
+      ROS_WARN("Non-monotonic events, skipping frame");
+      ROS_INFO("dt = %f\n current time =%f\n Previous Time =%f\n**", dt, t,t_last);
+      //reset state_time_map_
+      state_time_map_ = cv::Mat::ones(msg->height, msg->width, CV_64FC1) * t_first_;
+      return;
+    }
+    // ros info on current , previous time and dt
+
+
+    
+    
 
     // Update the time map
     state_time_map_.at<double>(y, x) = t;
