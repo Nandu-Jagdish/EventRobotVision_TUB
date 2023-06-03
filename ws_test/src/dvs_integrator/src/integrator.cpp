@@ -9,6 +9,23 @@ Integrator::Integrator(ros::NodeHandle & nh, ros::NodeHandle nh_private) : nh_(n
   // Get parameters of the method
   nh_private.param<double>("cut_off", alpha_cutoff_, 5.);
 
+  // Get parameters of the Leaky integrator
+  std::string integration_method;
+  nh_private.param<std::string>("Integration_Method",integration_method, "INTEGRATION_METHOD_LEAKY");
+  if (integration_method == "INTEGRATION_METHOD_LEAKY")
+  {
+    integration_method_ = INTEGRATION_METHOD_LEAKY;
+  }
+  else if (integration_method == "INTEGRATION_DIRECT")
+  {
+    integration_method_ = INTEGRATION_DIRECT;
+  }
+  else
+  {
+    ROS_ERROR("Integration method not recognized. Using Leaky integrator.");
+    integration_method_ = INTEGRATION_METHOD_LEAKY;
+  }
+
   // Set up subscribers and publishers
   event_sub_ = nh_.subscribe("events", 0, &Integrator::eventsCallback, this);//infiinte queue size
   // Set the queue size to infinity to avoid dropping messages.
@@ -69,6 +86,7 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   // reset time stamp
   // init t_first to dummy value
   double t_first_ = 0.0;
+  
 
   std::cout << "alpha_cutoff_ = " << alpha_cutoff_ << std::endl;
   if (!(state_time_map_.rows == msg->height && state_time_map_.cols == msg->width))
@@ -131,16 +149,65 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     state_time_map_.at<double>(y, x) = t;
 
     // Update the brightness image
-    // FILL IN...
-    if (p)
+    // Leaky or Direct integration
+    if (integration_method_ == INTEGRATION_METHOD_LEAKY)
     {
-      state_image_.at<double>(y, x) += c_pos_ + exp(-dt * alpha_cutoff_);
+      // Leaky integrator
+      if (p)
+      {
+        state_image_.at<double>(y, x) = c_pos_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
+      }
+      else
+      {
+        state_image_.at<double>(y, x) = -c_neg_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
+      }
+    }
+    else if (integration_method_ == INTEGRATION_DIRECT)
+    {
+      // Direct method
+      // FILL IN...
+      if (p)
+      {
+        state_image_.at<double>(y, x) += c_pos_;
+      }
+      else
+      {
+        state_image_.at<double>(y, x) -= c_neg_;
+      }
     }
     else
     {
-      state_image_.at<double>(y, x) -= c_neg_ + exp(-dt * alpha_cutoff_);
+      ROS_ERROR("Unknown integration method");
     }
+    // if (p)
+    // {
+    //   state_image_.at<double>(y, x) = c_pos_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
+    // }
+    // else
+    // {
+    //   state_image_.at<double>(y, x) = -c_neg_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
+    // }
+    //Non leaky integrator
+    // if (p)
+    // {
+    //   state_image_.at<double>(y, x) += c_pos_;
+    // }
+    // else
+    // {
+    //   state_image_.at<double>(y, x) -= c_neg_;
+    // }
+    
+    // if (p)
+    // {
+
+    //   state_image_.at<double>(y, x) += c_pos_ + exp(-dt * alpha_cutoff_)*state_time_map_.at<double>(y, x);
+    // }
+    // else
+    // {
+    //   state_image_.at<double>(y, x) -= c_neg_ + exp(-dt * alpha_cutoff_);
+    // }
   }
+  
 
 
 
@@ -213,6 +280,7 @@ void Integrator::publishState()
 void Integrator::reconfigureCallback(dvs_integrator::dvs_integratorConfig &config, uint32_t level)
 {
   alpha_cutoff_ = config.Cutoff_frequency;
+  // integration_method_ = config.Integration_method;
 }
 
 

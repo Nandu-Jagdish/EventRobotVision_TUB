@@ -42,6 +42,13 @@ private:
   double c_pos_; // contrast threshold for positive events
   double c_neg_; // contrast threshold for negative events
 
+  enum Integration_Method
+  {
+    
+    INTEGRATION_METHOD_LEAKY, INTEGRATION_DIRECT
+  } integration_method_;
+
+
   void minMaxLocRobust(const cv::Mat& image, double& min, double& max,
                        const double& percentage_pixels_to_discard);
 };
