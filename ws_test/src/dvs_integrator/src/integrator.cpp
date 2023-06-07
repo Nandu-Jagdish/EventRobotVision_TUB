@@ -69,21 +69,7 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
 
 
 
-  // if (msg->events.size() > 0)
-  // {
-  //    double t_first = msg->events[0].ts.toSec();
-  //   //  double t_last = msg->events[msg->events.size() - 1].ts.toSec();
-  //   // init t_last
-  //   double t_last = state_time_map_.at<double>(0, 0);
-  //   if (t_first > t_last)
-  //   {
-  //     ROS_WARN("Non-monotonic events, skipping frame");
-  //     // return;
-  //     // make the last event the first event
-  //     t_first = t_last;
-  //   }
-  // }
-  // reset time stamp
+  
   // init t_first to dummy value
   double t_first_ = 0.0;
   
@@ -94,7 +80,7 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     // Allocate memory for time map and for image out
     const double t_first_ = msg->events[0].ts.toSec();
     // Initialize the time map with the time of the first event
-    // state_time_map_ = cv::Mat::ones(msg->height, msg->width, CV_64FC1) * t_first_;
+    
     state_time_map_ = cv::Mat(msg->height, msg->width, CV_64FC1, cv::Scalar(t_first_));
 
 
@@ -133,10 +119,11 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     // if time not monotonic
     if (dt < 0)
     {
-      ROS_WARN("Non-monotonic events, skipping frame");
+      
       ROS_INFO("dt = %f\n current time =%f\n Previous Time =%f\n**", dt, t,t_last);
       //reset state_time_map_
-      state_time_map_ = cv::Mat::ones(msg->height, msg->width, CV_64FC1) * t_first_;
+      state_time_map_ = cv::Mat(msg->height, msg->width, CV_64FC1, cv::Scalar(t_first_));
+
       return;
     }
     // ros info on current , previous time and dt
@@ -179,23 +166,10 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     {
       ROS_ERROR("Unknown integration method");
     }
-    // if (p)
-    // {
-    //   state_image_.at<double>(y, x) = c_pos_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
-    // }
-    // else
-    // {
-    //   state_image_.at<double>(y, x) = -c_neg_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
-    // }
-    //Non leaky integrator
-    // if (p)
-    // {
-    //   state_image_.at<double>(y, x) += c_pos_;
-    // }
-    // else
-    // {
-    //   state_image_.at<double>(y, x) -= c_neg_;
-    // }
+
+
+
+   
     
     // if (p)
     // {
