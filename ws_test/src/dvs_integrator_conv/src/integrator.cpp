@@ -60,9 +60,14 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   int ksize; // =... FILL IN...
   int hksize; // =... FILL IN... half kernel size: 0 if 1x1 kernel, 1 if 3x3 kenel, 2 if 5x5 kernel, etc.
 
+
+  ksize = 3;
+  hksize = 1;
+
   for (const dvs_msgs::Event& ev : msg->events)
   {
     const double tk = ev.ts.toSec();
+    cv::Rect roi(ev.x-hksize, ev.y-hksize, ksize, ksize);
 
     // Update state
     if ( (hksize <= ev.x) && (ev.x <= msg->width-1-hksize)
@@ -72,11 +77,57 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
 
       // Current set of state pixels to be updated
       // cv::Rect ... FILL IN...
-
-
+      // set replacement kernel
+      // cv::Mat kernel_roi = kernel(roi);
       // Update state: time map and map of convolved accumulated polarities
-      // Implement decay on selected pixels
-      // ... FILL IN...
+      //replace state_image_ with kernel_roi
+      kernel.copyTo(state_image_(roi));
+      // //get t_last_ from state_time_map_ at current x,y
+      // t_last_ = state_time_map_.at<double>(ev.y, ev.x);
+      // update time map
+      state_time_map_(roi) = tk;
+      
+     
+      // iterate over all pixels in the roi
+      for (int i = 0; i < ksize; i++)
+      {
+        for (int j = 0; j < ksize; j++)
+        {
+          //get the time of the current pixel
+          double t = state_time_map_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
+          //get the polarity of the current pixel
+          double p = state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
+          //get the time of the last event
+          double t_last = state_time_map_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
+          //get the polarity of the last event
+          double p_last = state_image_.at<double>(ev.y, ev.x);
+          //get the time difference between the current event and the last event
+          double dt = tk - t_last;
+          //get the polarity difference between the current event and the last event
+          double dp = p - p_last;
+          //get the contrast sensitivity
+          double c = (p_last > 0) ? c_pos_ : c_neg_;
+          //get the decay factor
+          double alpha = exp(-dt*alpha_cutoff_);
+          //update the polarity of the current pixel
+          state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = c + alpha*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
+        }
+      }
+      
+      // //decay state_image in the roi
+      // cv::Mat state_image_roi = state_image_(roi);
+      // cv::Mat state_time_map_roi = state_time_map_(roi);
+      // cv::Mat state_image_roi_decay = state_image_roi * exp(-(tk - t_last_)/alpha_cutoff_);
+      // cv::Mat state_time_map_roi_decay = state_time_map_roi * exp(-(tk - t_last_)/alpha_cutoff_);
+      // state_image_roi_decay.copyTo(state_image_(roi));
+      // state_time_map_roi_decay.copyTo(state_time_map_(roi));
+
+
+
+
+
+ 
+
 
 
       // Update time image using tk
@@ -86,6 +137,9 @@ void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     else
     {
       // Out of bounds. Just update the time map
+      state_time_map_(roi) = tk;
+
+     
 
     }
   }
@@ -134,6 +188,9 @@ void Integrator::setKernel(cv::Mat& ker)
   {
     case 1:
       sobel_x_.copyTo(ker);
+      break;
+    default:
+      ker = cv::Mat::ones(3, 3, CV_64FC1);
       break;
     // FILL IN...
   }
