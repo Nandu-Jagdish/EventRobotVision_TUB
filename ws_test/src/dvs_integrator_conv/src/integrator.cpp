@@ -56,10 +56,11 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
 
   // Choose a kernel (outside the event loop)
   cv::Mat kernel;
-  // sobel_x_.copyTo(kernel);
+  sobel_x_.copyTo(kernel);
   // single_pix.copyTo(kernel);
+  // identity.copyTo(kernel);
   
-  setKernel(kernel);
+  // setKernel(kernel);
   // get kernel size
   int ksize = kernel.rows;
   // get half kernel size
@@ -76,7 +77,7 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
   for (const dvs_msgs::Event& ev : msg->events)
   {
     tk = ev.ts.toSec();
-    cv::Rect roi(ev.x-hksize, ev.y-hksize, ksize, ksize);
+    // cv::Rect roi(ev.x-hksize, ev.y-hksize, ksize, ksize);
     
     // Update state
     if ( (hksize <= ev.x) && (ev.x <= msg->width-1-hksize)
@@ -136,16 +137,16 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
           const int y = ev.y;
           const bool p = ev.polarity;
           const double t = ev.ts.toSec();
-          double t_last = state_time_map_.at<double>(y, x);
-          const double dt = t - t_last;
-          state_time_map_.at<double>(y, x) = tk;
+          double t_last = state_time_map_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
+          double dt = t - t_last;
+          state_time_map_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = tk;
           if (p)
           {
-            state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = c_pos_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
+            state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = c_pos_*kernel.at<double>(i,j) + exp(-dt * alpha_cutoff_)*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
           }
           else
           {
-            state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = -c_neg_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
+            state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = -c_neg_*kernel.at<double>(i,j) + exp(-dt * alpha_cutoff_)*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
           }
 
 
@@ -159,7 +160,7 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
       }
 
       // update time map
-      state_time_map_(roi) = tk;
+      // state_time_map_(roi) = tk;
       
       // //decay state_image in the roi
       // cv::Mat state_image_roi = state_image_(roi);

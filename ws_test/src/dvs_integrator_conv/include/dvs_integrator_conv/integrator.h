@@ -55,7 +55,9 @@ private:
   const cv::Mat laplace_ = (cv::Mat_<double>(3,3) << 1, 4, 1, 4, -20, 4, 1, 4, 1) / 6.;  // Matlab fspecial function with default alpha = 0.2
   const cv::Mat blur_gauss_ = (cv::Mat_<double>(3,3) << 0.01134, 0.08381, 0.01134, 0.08381, 0.6194, 0.08381, 0.01134, 0.08381, 0.01134); // sigma = 0.5
   // single pixle kerlnal
-  const cv::Mat single_pix = (cv::Mat_<double>(1,1) << 1); // sigma = 0.5
+  const cv::Mat single_pix = (cv::Mat_<double>(1,1) << 1); 
+  // identity kernel
+  const cv::Mat identity = (cv::Mat_<double>(3,3) << 1, 0, 0, 0, 1, 0, 0, 0, 1); 
   void minMaxLocRobust(const cv::Mat& image, double& min, double& max,
                        const double& percentage_pixels_to_discard);
   void normalize(const cv::Mat& src, cv::Mat& dst, const double& percentage_pixels_to_discard);
