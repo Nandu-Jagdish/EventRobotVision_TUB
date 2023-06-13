@@ -141,11 +141,11 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
           state_time_map_.at<double>(y, x) = tk;
           if (p)
           {
-            state_image_.at<double>(y, x) = c_pos_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
+            state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = c_pos_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
           }
           else
           {
-            state_image_.at<double>(y, x) = -c_neg_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
+            state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = -c_neg_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
           }
 
 
