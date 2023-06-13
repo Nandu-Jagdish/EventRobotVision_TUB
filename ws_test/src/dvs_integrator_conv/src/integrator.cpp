@@ -56,11 +56,8 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
 
   // Choose a kernel (outside the event loop)
   cv::Mat kernel;
-  sobel_x_.copyTo(kernel);
-  // single_pix.copyTo(kernel);
-  // identity.copyTo(kernel);
-  
-  // setKernel(kernel);
+ 
+  setKernel(kernel);
   // get kernel size
   int ksize = kernel.rows;
   // get half kernel size
@@ -83,62 +80,29 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
     if ( (hksize <= ev.x) && (ev.x <= msg->width-1-hksize)
       && (hksize <= ev.y) && (ev.y <= msg->height-1-hksize) )
     {
-      // Border due to convolution mask
-
-      // Current set of state pixels to be updated
-      // cv::Rect ... FILL IN...
-      // set replacement kernel
-      // cv::Mat kernel_roi = kernel(roi);
-      // Update state: time map and map of convolved accumulated polarities
-      //replace state_image_ with 
-      // kernel = [[0,0,0],[0,1,0],[0,0,0]];
-     
-      // kernel.copyTo(state_image_(roi));
-      // //get t_last_ from state_time_map_ at current x,y
-      // t_last_ = state_time_map_.at<double>(ev.y, ev.x);
       
-      
-     
-      // iterate over all pixels in the roi
-      // ROS_INFO("iterate over all pixels in the roi");
       for (int i = 0; i < ksize; i++)
       {
         for (int j = 0; j < ksize; j++)
         {
-           /* 
-          //get the polarity of the current pixel
-          double p = state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
-
-          // get the event polarity
-          c_neg_ = -1*c_pos_;
-          double p_ev = (ev.polarity) ? c_pos_ : c_neg_;
-          //get the time of the last event
-          double t_last = state_time_map_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
-          //get the time difference between the current event and the last event
-          double dt = tk - t_last;
-          //get the contrast sensitivity
-          // double c = (p > 0) ? c_pos_ : c_neg_;
-          //get the decay factor
-          double alpha = exp(-dt*alpha_cutoff_);
-          //update the polarity of the current pixel
-          // ROS_INFO("apply the leaky integrator");
-          state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = p_ev + alpha*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
-          // state_image_.at<double>(ev.y, ev.x) = c + alpha*state_image_.at<double>(ev.y, ev.x);
-          // ROS_INFO("apply the leaky integrator at %d, %d", ev.y, ev.x);
-          // state_image_.at<double>(ev.y, ev.x) += c ;
-          
-          // update the time map
-          // state_time_map_.at<double>(ev.y, ev.x) = tk;
-
-         */  
-          // test
-
+           
           const int x = ev.x;
           const int y = ev.y;
           const bool p = ev.polarity;
           const double t = ev.ts.toSec();
           double t_last = state_time_map_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
           double dt = t - t_last;
+
+              // if time not monotonic
+          if (dt < 0)
+          {
+            
+            // ROS_INFO("dt = %f\n current time =%f\n Previous Time =%f\n**", dt, t,t_last);
+            //reset state_time_map_
+            state_time_map_ = cv::Mat(msg->height, msg->width, CV_64FC1, cv::Scalar(t_first_));
+
+            return;
+          }
           state_time_map_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = tk;
           if (p)
           {
@@ -159,16 +123,6 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
         }
       }
 
-      // update time map
-      // state_time_map_(roi) = tk;
-      
-      // //decay state_image in the roi
-      // cv::Mat state_image_roi = state_image_(roi);
-      // cv::Mat state_time_map_roi = state_time_map_(roi);
-      // cv::Mat state_image_roi_decay = state_image_roi * exp(-(tk - t_last_)/alpha_cutoff_);
-      // cv::Mat state_time_map_roi_decay = state_time_map_roi * exp(-(tk - t_last_)/alpha_cutoff_);
-      // state_image_roi_decay.copyTo(state_image_(roi));
-      // state_time_map_roi_decay.copyTo(state_time_map_(roi));
 
 
 
@@ -186,9 +140,8 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
     {
       // Out of bounds. Just update the time map
       // out of bounds
-      ROS_WARN_STREAM("Event outside of bounds: " << ev.x << ", " << ev.y);
-      // state_time_map_(roi) = tk;
-      // Update time map at y,x
+      // ROS_WARN_STREAM("Event outside of bounds: " << ev.x << ", " << ev.y);
+ 
       state_time_map_.at<double>(ev.y, ev.x) = tk;
       
 
@@ -204,7 +157,7 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
   if (image_pub_.getNumSubscribers() + time_map_pub_.getNumSubscribers() > 0)
   {
     // publishState();
-    publishState_bak();
+    publishState();
     // std::cout<<('x');
   }
 }
@@ -245,9 +198,22 @@ void Integrator::setKernel(cv::Mat& ker)
   {
     case 1:
       // sobel_x_.copyTo(ker);
+      ROS_INFO_STREAM("ones");
       ker = cv::Mat::ones(1, 1, CV_64FC1);
 
       break;
+    case 2:
+      ROS_INFO_STREAM("sobel_x");
+      sobel_x_.copyTo(ker);
+      break;
+    case 3:
+      ROS_INFO_STREAM("sobel_y");
+      sobel_y_.copyTo(ker);
+      break;
+    case 4:
+      laplace_.copyTo(ker);
+      break;
+
     default:
       ker = cv::Mat::ones(1, 1, CV_64FC1);
       // sobel_x_.copyTo(ker);
@@ -305,137 +271,7 @@ void Integrator::normalize(const cv::Mat& src, cv::Mat& dst, const double& perce
 
 
 // test set
-void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
-{
-  // Need to update the state (time_map and brightness image) even if there are no subscribers on the output image
-  //check monotonic time and count events
 
-  //check if the new event is older than current event
-
-
-
-  
-  // init t_first to dummy value
-  double t_first_ = 0.0;
-  
-
-  std::cout << "alpha_cutoff_ = " << alpha_cutoff_ << std::endl;
-  if (!(state_time_map_.rows == msg->height && state_time_map_.cols == msg->width))
-  {
-    // Allocate memory for time map and for image out
-    const double t_first_ = msg->events[0].ts.toSec();
-    // Initialize the time map with the time of the first event
-    
-    state_time_map_ = cv::Mat(msg->height, msg->width, CV_64FC1, cv::Scalar(t_first_));
-
-
-    // and initialize the brightness image to zero.
-    // state_time_map_ = cv::Mat::zeros(msg->height, msg->width, CV_64FC1) ;
-    state_image_ = cv::Mat::zeros(msg->height, msg->width, CV_64FC1);
-//    state_image_    = cv::Mat ...
-  }
-
-  // Process events in the message msg, one by one (in a loop)
-  // FILL IN...
-  
-  for (int i = 0; i < msg->events.size(); i++)
-  {
-    // Get the event
-    const dvs_msgs::Event & e = msg->events[i];
-
-    // Get the event coordinates
-    const int x = e.x;
-    const int y = e.y;
-
-    // Get the event time
-    const double t = e.ts.toSec();
-
-    // Get the event polarity
-    const bool p = e.polarity;
-
-    // Get the time of the last event at (x,y)
-    const double t_last = state_time_map_.at<double>(y, x);
-
-    // Compute the time interval from the last event at (x,y)
-    const double dt = t - t_last;
-
-    // ros info on dt
-    // ROS_INFO("dt = %f\n current time =%f\n Previous Time =%f\n**", dt, t,t_last);
-    // if time not monotonic
-    if (dt < 0)
-    {
-      
-      ROS_INFO("dt = %f\n current time =%f\n Previous Time =%f\n**", dt, t,t_last);
-      //reset state_time_map_
-      state_time_map_ = cv::Mat(msg->height, msg->width, CV_64FC1, cv::Scalar(t_first_));
-
-      return;
-    }
-    // ros info on current , previous time and dt
-
-
-    
-    
-
-    // Update the time map
-    state_time_map_.at<double>(y, x) = t;
-
-    // Update the brightness image
-    // Leaky or Direct integration
-    // if (integration_method_ == INTEGRATION_METHOD_LEAKY)
-    {
-      // Leaky integrator
-      if (p)
-      {
-        state_image_.at<double>(y, x) = c_pos_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
-      }
-      else
-      {
-        state_image_.at<double>(y, x) = -c_neg_ + exp(-dt * alpha_cutoff_)*state_image_.at<double>(y, x);
-      }
-    }
-    // else if (integration_method_ == INTEGRATION_DIRECT)
-    // {
-    //   // Direct method
-    //   // FILL IN...
-    //   if (p)
-    //   {
-    //     state_image_.at<double>(y, x) += c_pos_;
-    //   }
-    //   else
-    //   {
-    //     state_image_.at<double>(y, x) -= c_neg_;
-    //   }
-    // }
-    // else
-    // {
-    //   ROS_ERROR("Unknown integration method");
-    // }
-
-
-
-   
-    
-    // if (p)
-    // {
-
-    //   state_image_.at<double>(y, x) += c_pos_ + exp(-dt * alpha_cutoff_)*state_time_map_.at<double>(y, x);
-    // }
-    // else
-    // {
-    //   state_image_.at<double>(y, x) -= c_neg_ + exp(-dt * alpha_cutoff_);
-    // }
-  }
-  
-
-
-
-  // Exit if there are no subscribers
-  if (image_pub_.getNumSubscribers() + time_map_pub_.getNumSubscribers() > 0)
-  {
-    publishState_bak();
-  }
-}
   // if 
 void Integrator::publishState_bak()
 {
