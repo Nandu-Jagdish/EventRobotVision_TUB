@@ -11,7 +11,7 @@ Integrator::Integrator(ros::NodeHandle & nh, ros::NodeHandle nh_private) : nh_(n
   nh_private.param<double>("cut_off", alpha_cutoff_, 5.);
 
   // Set up subscribers and publishers
-  event_sub_ = nh_.subscribe("events", 0, &Integrator::eventsCallback_bak, this);
+  event_sub_ = nh_.subscribe("events", 0, &Integrator::eventsCallback, this);
   // set queue_size to 0 to avoid discarding messages (for correctness).
 
   image_transport::ImageTransport it_(nh_);
@@ -41,7 +41,7 @@ Integrator::~Integrator()
 /**
  * Process input event messages
  */
-void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
+void Integrator::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
 {
   // Need to update the state (time_map and brightness image) even if there are no subscribers on the output image
   const double t_first_ = msg->events[0].ts.toSec();
@@ -113,23 +113,8 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
             state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize) = -c_neg_*kernel.at<double>(i,j) + exp(-dt * alpha_cutoff_)*state_image_.at<double>(ev.y+i-hksize, ev.x+j-hksize);
           }
 
-
-
-
-
-
-
-
         }
       }
-
-
-
-
-
-
- 
-
 
 
       // Update time image using tk
@@ -166,6 +151,8 @@ void Integrator::eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg)
 /**
  * Publish the time map and the brightness image at latest time (Output)
  */
+
+
 void Integrator::publishState()
 {
   // Publish the current state (time map and image)
@@ -178,13 +165,15 @@ void Integrator::publishState()
   cv_image_time.encoding = "mono8";
 
   // Fill content in appropriate range [0,255]
+
   // Need to decay the image to the present time
-  // cv::Mat image_out;
-  // FILL IN...
+  cv::Mat decay;
+  cv::exp( -alpha_cutoff_ * (t_last_ - state_time_map_), decay);
+  cv::Mat image_out = state_image_.mul(decay); // point-wise multiplication
 
   // Map from current range (or better, from robust min and max) to [0,255]
   normalize(state_time_map_, cv_image_time.image, 5.);
-  normalize(state_image_, cv_image.image, 5.);
+  normalize(image_out, cv_image.image, 5.);
 
   // Publish the time map and the brightness image
   time_map_pub_.publish(cv_image_time.toImageMsg());
@@ -211,6 +200,7 @@ void Integrator::setKernel(cv::Mat& ker)
       sobel_y_.copyTo(ker);
       break;
     case 4:
+      ROS_INFO_STREAM("laplace");
       laplace_.copyTo(ker);
       break;
 
@@ -273,54 +263,7 @@ void Integrator::normalize(const cv::Mat& src, cv::Mat& dst, const double& perce
 // test set
 
   // if 
-void Integrator::publishState_bak()
-{
-  // Publish the current state (time map and image)
-  // ROS_INFO("Publishing state");
-  // Initialize, including header
-  cv_bridge::CvImage cv_image, cv_image_time;
-  cv_image.header.stamp = ros::Time::now();
-  cv_image.encoding = "mono8";
-  cv_image_time.header.stamp = ros::Time::now();
-  cv_image_time.encoding = "mono8";
 
-  // Need to display all pixels at the same reference time (e.g., the time of
-  // the last event). So do not forget to "decay" the brightness to the ref. time.
-  // FILL IN...
-  // cv_image_time.image = state_time_map_;
-  // cv_image.image = state_image_;
-
-  cv::Mat image_out;
-  cv::Mat time_map_out;
-
-  state_image_.copyTo(image_out);
-  state_time_map_.copyTo(time_map_out);
-
-
-
-  // Convert to appropriate range, [0,255]
-  // Feel free to use minMaxLocRobust
-  // FILL IN...
-  double min, max;
-  minMaxLocRobust(image_out, min, max, 2);
-  image_out = (image_out - min) * 255.0 / (max - min);
-  image_out.convertTo(cv_image.image, CV_8UC1);
-  // cv_image_time.image = (cv_image_time.image - min) * 255.0 / (max - min);
-  // cv_image_time.image.convertTo(cv_image_time.image, CV_8UC1);
-
-  double min_time, max_time;
-  minMaxLocRobust(time_map_out, min_time, max_time, 2);
-  time_map_out = (time_map_out - min_time) * 255.0 / (max_time - min_time);
-  time_map_out.convertTo(cv_image_time.image, CV_8UC1);
-
-
-  
-
-
-  // Publish the time map and the brightness image
-  time_map_pub_.publish(cv_image_time.toImageMsg());
-  image_pub_.publish(cv_image.toImageMsg());
-}
 
 
 
