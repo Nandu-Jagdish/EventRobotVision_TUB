@@ -22,6 +22,8 @@ private:
 
   // Callback functions
   void eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg);
+  void eventsCallback_bak(const dvs_msgs::EventArray::ConstPtr& msg);
+
 
   // Subscribers
   ros::Subscriber event_sub_;
@@ -32,6 +34,8 @@ private:
   cv::Mat state_time_map_;  // Time of the last event at each pixel
   cv::Mat state_image_;     // Brightness value at each pixel
   void publishState();
+  void publishState_bak();
+
 
   // Dynamic reconfigure
   void reconfigureCallback(dvs_integrator_conv::dvs_integrator_convConfig &config, uint32_t level);
@@ -50,7 +54,8 @@ private:
   const cv::Mat sobel_y_ = (cv::Mat_<double>(3,3) << 1, 2, 1, 0, 0, 0, -1, -2, -1) / 8.; // already flipped
   const cv::Mat laplace_ = (cv::Mat_<double>(3,3) << 1, 4, 1, 4, -20, 4, 1, 4, 1) / 6.;  // Matlab fspecial function with default alpha = 0.2
   const cv::Mat blur_gauss_ = (cv::Mat_<double>(3,3) << 0.01134, 0.08381, 0.01134, 0.08381, 0.6194, 0.08381, 0.01134, 0.08381, 0.01134); // sigma = 0.5
-
+  // single pixle kerlnal
+  const cv::Mat single_pix = (cv::Mat_<double>(1,1) << 1); // sigma = 0.5
   void minMaxLocRobust(const cv::Mat& image, double& min, double& max,
                        const double& percentage_pixels_to_discard);
   void normalize(const cv::Mat& src, cv::Mat& dst, const double& percentage_pixels_to_discard);
