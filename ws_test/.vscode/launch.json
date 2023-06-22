@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ROS: Launch",
+            "type": "ros",
+            "request": "launch",
+            // "cwd": "${workspaceFolder}/ws_test",
+            "attachDebugger":["dvs_integrator"],
+        
+
+            "target": "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/dvs_integrator/launch/integrator.launch"
+        },
+        
+
+        {
+            "name": "ROS: Attach",
+            "request": "attach",
+            "type": "ros",
+                }
+    ],
+
+}

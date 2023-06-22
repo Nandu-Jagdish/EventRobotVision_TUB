@@ -3,4 +3,5 @@ ws_test/build/
 ws_test/devel/
 ws_test/logs/
 ws_test/.catkin_tools/
+ros_bags/
 

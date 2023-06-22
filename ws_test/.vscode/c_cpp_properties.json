@@ -1,0 +1,29 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/rpg_dvs_ros/davis_ros_driver/include/**",
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/rpg_dvs_ros/dvs_calibration/include/**",
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/dvs_displayer/include/**",
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/dvs_integrator/include/**",
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/dvs_integrator_conv/include/**",
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/rpg_dvs_ros/dvs_renderer/include/**",
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/rpg_dvs_ros/dvs_ros_driver/include/**",
+        "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/rpg_dvs_ros/dvxplorer_ros_driver/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

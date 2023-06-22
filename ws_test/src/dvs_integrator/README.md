@@ -101,7 +101,7 @@ Open the rqt perspective view with four visualizers. This file is in the launch 
 
 Run the image reconstruction node in another terminal:
 
-	roslaunch dvs_integrator integrator.launch
+	l
 
 In another terminal play the bag with the event data:
 
