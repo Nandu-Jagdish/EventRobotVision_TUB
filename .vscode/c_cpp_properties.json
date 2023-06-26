@@ -6,6 +6,7 @@
                 "${workspaceFolder}/**",
                 "ws_test/src/**",
                 "/opt/ros/noetic/include",
+                "ws_test/src/dvs_global_flow/include/**",
                 "/usr/include/opencv4"
             ],
             "defines": [],

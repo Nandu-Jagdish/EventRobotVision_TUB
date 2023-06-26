@@ -15,5 +15,6 @@ void concatHorizontal(const cv::Mat& A, const cv::Mat& B, cv::Mat* C)
   CHECK_EQ(A.type(), B.type()) << "Input arguments must have the same type";
 
   // FILL IN ...
-  // *C = ... etc
+  
+  cv::hconcat(A, B, *C);
 }

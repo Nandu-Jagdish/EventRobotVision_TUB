@@ -197,8 +197,9 @@ double GlobalFlowEstimator::maximizeContrast()
   gsl_vector *vx = gsl_vector_alloc (num_params);
 
   // FILL IN ...
-  // gsl_vector_set (vx, ...
 
+  gsl_vector_set (vx, 0, vel_.x);
+  gsl_vector_set (vx, 1, vel_.y);
 
   //Initialize solver
   gsl_multimin_fdfminimizer *solver = gsl_multimin_fdfminimizer_alloc (solver_type, num_params);
@@ -276,6 +277,9 @@ double GlobalFlowEstimator::maximizeContrast()
   gsl_vector *final_x = gsl_multimin_fdfminimizer_x(solver);
 
   // FILL IN ...  the return value of vel_ using  final_x
+  // get velocity from final_x
+  vel_.x = gsl_vector_get(final_x, 0);
+  vel_.y = gsl_vector_get(final_x, 1);
 
 
   const double final_cost = gsl_multimin_fdfminimizer_minimum(solver);
