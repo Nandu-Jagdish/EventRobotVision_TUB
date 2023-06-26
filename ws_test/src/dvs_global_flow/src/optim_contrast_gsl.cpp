@@ -26,6 +26,11 @@ double contrast_Variance(const cv::Mat& image)
   double contrast;
   // FILL IN ...
   // hint: use OpenCV functions
+
+  // computer variance
+  cv::Scalar mean, stddev;
+  cv::meanStdDev(image, mean, stddev);
+  contrast = stddev[0] * stddev[0];
   return contrast;
 }
 
@@ -77,7 +82,11 @@ double contrast_f_numerical (const gsl_vector *v, void *adata)
   double contrast;
   // FILL IN ...
   // hint: Call computeImageOfWarpedEvents() and  computeContrast()
-
+  // init image
+  cv::Mat image = cv::Mat::zeros(*poAux_data->img_size, CV_64FC1);
+  // computeContrast(image, poAux_data->opts->contrast_measure_);
+  computeImageOfWarpedEvents(vel, *poAux_data->poEvents_subset, *poAux_data->img_size,&image, poAux_data->opts->opts_warp_);
+  contrast = computeContrast(image, poAux_data->opts->contrast_measure_);
   return -contrast;
 }
 

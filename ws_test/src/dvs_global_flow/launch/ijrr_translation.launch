@@ -1,6 +1,6 @@
 <launch>
 
-  <node pkg="rosbag" type="play" name="player" args="-r 1.0 -d 1. -s 0 path_to_rosbag/slider_far.bag" />
+  <node pkg="rosbag" type="play" name="player" args="-r 1.0 -d 1. -s 0 /media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ros_bags/slider_far.bag" />
 
   <!-- Render events and frames -->
   <node name="dvs_displayer_one" pkg="dvs_displayer" type="dvs_displayer" output="screen">
@@ -19,7 +19,7 @@
     <!-- <remap from="dvs_motion_compensated" to="/dvs/motion_compensated_image" /> -->
 
     <!-- Printing level. The higher, the more details are printed -->
-    <param name="verbosity" value="1" />
+    <param name="verbosity" value="3" />
 
     <!-- Sliding Window -->
     <!-- Number of events used to synthetize an image of warped events -->
