@@ -19,16 +19,16 @@
     <!-- <remap from="dvs_motion_compensated" to="/dvs/motion_compensated_image" /> -->
 
     <!-- Printing level. The higher, the more details are printed -->
-    <param name="verbosity" value="3" />
+    <param name="verbosity" value="1" />
 
     <!-- Sliding Window -->
     <!-- Number of events used to synthetize an image of warped events -->
-    <param name="num_events_per_image" value="50000" />
+    <param name="num_events_per_image" value="20000" />
     <!-- Number of events to slide for next window/packet of events -->
-    <param name="num_events_slide" value="50000" />
+    <param name="num_events_slide" value="20000" />
 
     <!-- Objective function to be optimized: 0=Variance, 1=Mean Square, etc.-->
-    <param name="contrast_measure" value="0" />
+    <param name="contrast_measure" value="1" />
 
     <!-- Event warping -->
     <param name="use_polarity" value="true" />
