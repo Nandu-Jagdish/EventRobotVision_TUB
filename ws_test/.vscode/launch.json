@@ -14,13 +14,20 @@
 
             "target": "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/dvs_integrator/launch/integrator.launch"
         },
+        {
+            "name": "ROS: Launch mosaic",
+            "type": "ros",
+            "request": "launch",
+            // "cwd": "${workspaceFolder}/ws_test",
+            "attachDebugger":["dvs_mosaic"],
         
 
-        {
-            "name": "ROS: Attach",
-            "request": "attach",
-            "type": "ros",
-                }
+            "target": "/media/psf/TU_Berlin/EventRobotVision/EventRobotVision_TUB/ws_test/src/dvs_mosaic/launch/synth.launch"
+        }
+     
+
+
     ],
+    
 
 }

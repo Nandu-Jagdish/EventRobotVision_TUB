@@ -1,4 +1,6 @@
 #include <dvs_mosaic/image_util.h>
+#include <cv_bridge/cv_bridge.h>
+
 
 namespace image_util
 {

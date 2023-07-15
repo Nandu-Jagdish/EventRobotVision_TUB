@@ -2,8 +2,6 @@
 
   <!-- Visualize the images produced -->
   <!-- Load this node first -->
-  <node name = "my_rqt_dashboard" pkg = "rqt_gui" type = "rqt_gui" respawn = "false" output = "screen"
-    args = "--perspective-file $(find dvs_mosaic)/launch/mosaic_view.perspective"/>
 
   <!-- Play the data in the ROS bag file, as if an event camera was available -->
   <node pkg="rosbag" type="play" name="player" args="-r 1.0 -s 0 -u 5. $(find dvs_mosaic)/data/synth1/events.bag" />

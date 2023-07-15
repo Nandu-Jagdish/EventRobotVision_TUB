@@ -24,16 +24,22 @@ Mosaic::Mosaic(ros::NodeHandle & nh, ros::NodeHandle nh_private)
 
   // Set up subscribers
   // FILL IN...
-  ROS_ERROR("You need to start writing the code..."); return;
+  // ROS_ERROR("You need to start writing the code..."); return;
+  event_sub_ = nh_.subscribe("events", 0, &Mosaic::eventsCallback, this);
 
   // set queue_size to 0 to avoid discarding messages (for correctness).
 
   // Set up publishers
   image_transport::ImageTransport it_(nh_);
-  // FILL IN...
+  // FILL IN...    
   // my topics names: time_map, mosaic, mosaic_gx, mosaic_gy, mosaic_trace_cov,
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("mosaic_pose", 1);
+  time_map_pub_ = it_.advertise("time_map", 1);
+  mosaic_pub_ = it_.advertise("mosaic", 1);
+  mosaic_gradx_pub_ = it_.advertise("mosaic_gx", 1);
+  mosaic_grady_pub_ = it_.advertise("mosaic_gy", 1);
+  mosaic_tracecov_pub_ = it_.advertise("mosaic_trace_cov", 1);
 
   // Dynamic reconfigure
   dynamic_reconfigure_callback_ = boost::bind(&Mosaic::reconfigureCallback, this, _1, _2);
@@ -46,17 +52,26 @@ Mosaic::Mosaic(ros::NodeHandle & nh, ros::NodeHandle nh_private)
 
   // Camera information
   // This yaml file is provided in folder data/synth1/
-  std::string cam_name("DVS-synthetic"); // yaml file should be in placed in /home/ggb/.ros/camera_info
+  std::string cam_name("DVS-synthetic"); // yaml file should be in placed in /home/ggb/.ros/camera_info #TODO
   camera_info_manager::CameraInfoManager cam_info (nh_, cam_name);
   dvs_cam_.fromCameraInfo(cam_info.getCameraInfo());
   const cv::Size sensor_resolution = dvs_cam_.fullResolution();
   // FILL IN ...
   // Set sensor_width_, sensor_height_ and precompute bearing vectors
+  sensor_width_ = sensor_resolution.width;
+  sensor_height_ = sensor_resolution.height;
 
   // Mosaic size (in pixels)
   mosaic_width_ = 2 * mosaic_height_;
-  // FILL IN ...
+  // FILL IN ...      
   // Set mosaic_size_, fx_ and fy_ and Initialize mosaic_img_ (if needed)
+  // mosaic_size_ = [mosaic_width_, mosaic_height_];
+  fx_ = mosaic_width_ / (2*CV_PI);
+  fy_ = mosaic_height_ / CV_PI;
+  mosaic_size_ = cv::Size(mosaic_width_, mosaic_height_);
+
+  // call precomputeBearingVectors() to precompute bearing vectors
+  precomputeBearingVectors();
 
 
   // Observation / Measurement function
@@ -82,6 +97,13 @@ Mosaic::~Mosaic()
 {
   // FILL IN ...
   // shut down all publishers
+  pose_pub_.shutdown();
+  time_map_pub_.shutdown();
+  mosaic_pub_.shutdown();
+  mosaic_gradx_pub_.shutdown();
+  mosaic_grady_pub_.shutdown();
+  mosaic_tracecov_pub_.shutdown();
+
 }
 
 
@@ -139,7 +161,7 @@ void Mosaic::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     // because it is expensive to compute this rotation matrix
     const int num_events_share_Rot = 300;
     int idx_first_ev_batch = 0;
-    //static int iCount = 0;
+    static int iCount = 0;
     while ( idx_first_ev_batch < events_subset_.size() )
     {
       int num_ev_batch = std::min(num_events_share_Rot, int(events_subset_.size())-idx_first_ev_batch);
@@ -162,23 +184,29 @@ void Mosaic::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
       rotationAt(t_batch, Rot);
 
       // Loop through the events
-      //cv::Mat pano_ev = cv::Mat::zeros(mosaic_size_, CV_32FC1);
+      cv::Mat pano_ev = cv::Mat::zeros(mosaic_size_, CV_32FC1);
+      VLOG(2) << "MAP: Loop through the events";
       for (const dvs_msgs::Event& ev : events_batch)
       {
         // Get time of current and last event at the pixel
         const double t_ev = ev.ts.toSec();
         double t_prev; // FILL IN: get it from time_map_
+        t_prev = time_map_.at<double>(ev.y, ev.x);
         // FILL IN: Update time map
+        time_map_.at<double>(ev.y, ev.x) = t_ev;
 
         // Get last rotation at the event
         const int idx = ev.y*sensor_width_ + ev.x;
         cv::Matx33d Rot_prev; // FILL IN get it from map_of_last_rotations_
+        Rot_prev = map_of_last_rotations_.at(idx);
         // FILL IN update (prepare for next iteration)
-        // map_of_last_rotations_.at(idx) = ...
+        map_of_last_rotations_.at(idx) = Rot;
 
-        /*
+        // 
         // Example of plotting events on mosaic
         // Get map point corresponding to current event
+        VLOG(2) << "MAP: Plotting events on mosaic";
+        /**/
         cv::Point3d rotated_bvec = Rot * precomputed_bearing_vectors_.at(idx);
         cv::Point2f pm;
         project_EquirectangularProjection(rotated_bvec, pm);
@@ -187,7 +215,8 @@ void Mosaic::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
         {
           pano_ev.at<float>(ir,ic) = (ev.polarity ? 1. : -1.);
         }
-        */
+        // */
+        // End of debugging code
 
         if (t_prev < 0)
         {
@@ -197,19 +226,26 @@ void Mosaic::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
         processEventForMap(ev,t_ev,t_prev,Rot,Rot_prev);
       }
       idx_first_ev_batch += num_ev_batch;
-      //iCount++;
+      iCount++;
 
-      /*
+      
       // Example of saving images (for prototyping / debugging)
-      std::stringstream ss;
-      cv::Mat out_img;
-      ss.str(std::string());
-      ss << "/tmp/pano_ev_" << std::setfill('0') << std::setw(8) << iCount << ".png";
-      cv::normalize(pano_ev, out_img, 0, 255.0, cv::NORM_MINMAX, CV_32FC1);
-      cv::imwrite(ss.str(), out_img );
-      */
-    }
+      // std::stringstream ss;
+      // cv::Mat out_img;
+      // ss.str(std::string());
+      // ss << "/tmp/pano_ev_" << std::setfill('0') << std::setw(8) << iCount << ".png";
+      // cv::normalize(pano_ev, out_img, 0, 255.0, cv::NORM_MINMAX, CV_32FC1);
+      // // displayImage("pano_ev", out_img);
+      // // display the image
+      // // cv::namedWindow("pano_ev", cv::WINDOW_GUI_NORMAL);
+      // // cv::imshow("pano_ev", out_img);
+      // // cv::waitKey(1);
 
+
+      // cv::imwrite(ss.str(), out_img );
+      // // End of debugging code
+    }
+    VLOG(1) << "MAP: End of loop through the events";
     publishMap();
     idx_first_ev_map_ += num_events_map_update_;
 

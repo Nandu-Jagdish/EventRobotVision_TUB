@@ -16,7 +16,7 @@ void Mosaic::loadPoses()
   // Open file to read data
   if (input_file.is_open())
   {
-    VLOG(2) << "Control poses file opened";
+    VLOG(1) << "Control poses file opened";
 
     int count = 0;
     std::string line;
@@ -36,7 +36,7 @@ void Mosaic::loadPoses()
         count++;
       }
     }
-    VLOG(2) << "count poses = " << count;
+    VLOG(1) << "count poses = " << count;
 
     input_file.close();
   }
@@ -47,23 +47,29 @@ void Mosaic::loadPoses()
   // FILL IN... get the first control pose
   //Transformation T0 = ... ;
   Transformation T0;
+ 
 
-  size_t control_pose_idx = 0u;
-  for(auto it : poses_)
-  {
-    VLOG(3) << "--Control pose #" << control_pose_idx++ << ". time = " << it.first;
-    VLOG(3) << "--T = ";
-    VLOG(3) << it.second;
-    poses_[it.first] = (T0.inverse()) * it.second;
-  }
 
-  control_pose_idx = 0u;
-  for(auto it : poses_)
-  {
-    VLOG(3) << "--Control pose #" << control_pose_idx++ << ". time = " << it.first;
-    VLOG(3) << "---------------------T normalized = ";
-    VLOG(3) << it.second;
-  }
+    T0 = poses_.begin()->second;
+
+    size_t control_pose_idx = 0u;
+    for(auto it : poses_)
+    {
+      VLOG(3) << "--Control pose #" << control_pose_idx++ << ". time = " << it.first;
+      VLOG(3) << "--T = ";
+      VLOG(3) << it.second;
+      poses_[it.first] = (T0.inverse()) * it.second;
+    }
+
+    control_pose_idx = 0u;
+    for(auto it : poses_)
+    {
+      VLOG(3) << "--Control pose #" << control_pose_idx++ << ". time = " << it.first;
+      VLOG(3) << "---------------------T normalized = ";
+      VLOG(3) << it.second;
+    }
+    
+    
 }
 
 }

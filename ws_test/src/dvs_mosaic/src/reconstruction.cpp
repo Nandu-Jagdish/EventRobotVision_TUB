@@ -44,6 +44,17 @@ void reconstructBrightnessFromGradientMap(const cv::Mat& grad_map,
   // Fill in output variable
   *map_reconstructed = cv::Mat(img_size, CV_32FC1);
   // FILL IN ...
+  // copy F to map_reconstructed
+
+  for(size_t i=0; i < height-1; ++i)
+  {
+    for(size_t j=0; j < width-1; ++j)
+    {
+      // map_reconstructed->at<double>(i,j) = M[i][j];
+      map_reconstructed->at<float>(i, j) = static_cast<float>(M[i][j]);
+
+    }
+  }
 
 }
 
